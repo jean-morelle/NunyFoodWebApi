@@ -1,0 +1,12 @@
+## Build
+bin/
+obj/
+
+## Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+
+## User Secrets : stockés hors du projet (jamais commités)
+## Chemin : %APPDATA%\Microsoft\UserSecrets\6befb58f-968a-4258-9260-e2163e316fc5\secrets.json

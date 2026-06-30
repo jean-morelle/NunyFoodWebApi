@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Readme/">
+    <File Path="Readme.cs" />
+  </Folder>
+  <Project Path="NunyFood/nunyfood.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="NunyFoodWebApi.Application/NunyFoodWebApi.Application.csproj" Id="75917953-cac6-484b-88d4-aaf9ba4cea41" />
+  <Project Path="NunyFoodWebApi.Domain/NunyFoodWebApi.Domain.csproj" Id="61b892cf-41e2-4be3-901a-a337b50d47a6" />
+  <Project Path="NunyFoodWebApi.Infrastructure/NunyFoodWebApi.Infrastructure.csproj" Id="ec8f5cc8-4d1b-45c4-a1ff-3deb8c7cb1b5" />
+  <Project Path="NunyFoodWebApi/NunyFoodWebApi.csproj" />
+</Solution>
