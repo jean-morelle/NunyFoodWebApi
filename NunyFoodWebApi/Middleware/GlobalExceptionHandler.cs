@@ -22,8 +22,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             return true;
         }
 
-        logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
-
         var (statusCode, title) = exception switch
         {
             KeyNotFoundException => (StatusCodes.Status404NotFound, exception.Message),
@@ -31,6 +29,12 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, exception.Message),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };
+
+        // Refus métier attendus (4xx) : simple avertissement, sans pile. Les vraies pannes (500) restent en erreur.
+        if (statusCode >= StatusCodes.Status500InternalServerError)
+            logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
+        else
+            logger.LogWarning("Requête refusée ({StatusCode}) : {Message}", statusCode, exception.Message);
 
         context.Response.StatusCode = statusCode;
         await context.Response.WriteAsJsonAsync(new ProblemDetails

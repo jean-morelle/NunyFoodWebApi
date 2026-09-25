@@ -1,14 +1,12 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NunyFoodWebApi.Application;
 using NunyFoodWebApi.Application.Interfaces;
 using NunyFoodWebApi.Infrastructure;
 using NunyFoodWebApi.Infrastructure.Security;
-using NunyFoodWebApi.Infrastructure.Storage;
 using NunyFoodWebApi.Middleware;
 using NunyFoodWebApi.RateLimiting;
 using NunyFoodWebApi.Services;
@@ -122,18 +120,7 @@ try
     app.UseExceptionHandler();
     app.UseHttpsRedirection();
     app.UseCors("NunyFoodFrontend");
-
-    // Fichiers envoyés (preuves de livraison). nosniff : le navigateur respecte le type image annoncé.
-    var storage = app.Configuration.GetSection("Storage").Get<StorageSettings>() ?? new StorageSettings();
-    var uploadsRoot = storage.GetRootPath(app.Environment);
-    Directory.CreateDirectory(uploadsRoot);
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(uploadsRoot),
-        RequestPath = storage.PublicBasePath,
-        OnPrepareResponse = ctx => ctx.Context.Response.Headers.XContentTypeOptions = "nosniff"
-    });
-
+    // Les preuves de livraison ne sont pas servies en fichiers statiques : voir GET /api/deliveries/{id}/photo.
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseRateLimiter();

@@ -61,8 +61,11 @@ public class DeliveryTests
         Assert.NotNull(result.DeliveredAt);
         Assert.Equal(6.1319, result.Latitude);
         Assert.Equal(2, _app.Files.Saved.Count);
-        Assert.Equal(_app.Files.Saved[0], result.PhotoUrl);
-        Assert.Equal(_app.Files.Saved[1], result.SignatureUrl);
+        Assert.Equal(_app.Files.Saved[0], _delivery.PhotoPath);
+        Assert.Equal(_app.Files.Saved[1], _delivery.SignaturePath);
+        // Le client reçoit les routes authentifiées, jamais le chemin de stockage.
+        Assert.Equal($"/api/deliveries/{_delivery.Id}/photo", result.PhotoUrl);
+        Assert.Equal($"/api/deliveries/{_delivery.Id}/signature", result.SignatureUrl);
         Assert.Equal(OrderStatus.Delivered, _order.Status);
     }
 

@@ -8,12 +8,17 @@ using NunyFoodWebApi.Application.Features.Deliveries.Queries;
 
 namespace NunyFoodWebApi.Controllers;
 
-[Authorize(Roles = "Admin,DeliveryAgent")]
+// Rôles définis action par action : un [Authorize(Roles)] de classe s'ajouterait à ceux des actions
+// et bloquerait les clients sur les routes de consultation.
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class DeliveriesController(ISender sender) : ControllerBase
 {
+    private const string Viewers = "Admin,DeliveryAgent,Customer";
+
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = Viewers)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var dto = await sender.Send(new GetDeliveryByIdQuery(id), ct);
@@ -21,6 +26,7 @@ public class DeliveriesController(ISender sender) : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = Viewers)]
     public async Task<IActionResult> GetDeliveries(
         [FromQuery] Guid? orderId,
         [FromQuery] Guid? agentId,
@@ -32,10 +38,30 @@ public class DeliveriesController(ISender sender) : ControllerBase
             return dto is null ? NotFound() : Ok(dto);
         }
 
-        if (agentId.HasValue)
+        // Un client consulte la livraison d'une de ses commandes, jamais la liste d'un livreur.
+        if (agentId.HasValue && !User.IsInRole("Customer"))
             return Ok(await sender.Send(new GetDeliveriesByAgentQuery(agentId.Value), ct));
 
         return BadRequest("Fournir orderId ou agentId.");
+    }
+
+    [HttpGet("{id:guid}/photo")]
+    [Authorize(Roles = Viewers)]
+    public Task<IActionResult> GetPhoto(Guid id, CancellationToken ct) => Proof(id, DeliveryProofKind.Photo, ct);
+
+    [HttpGet("{id:guid}/signature")]
+    [Authorize(Roles = Viewers)]
+    public Task<IActionResult> GetSignature(Guid id, CancellationToken ct) => Proof(id, DeliveryProofKind.Signature, ct);
+
+    private async Task<IActionResult> Proof(Guid id, DeliveryProofKind kind, CancellationToken ct)
+    {
+        var file = await sender.Send(new GetDeliveryProofQuery(id, kind), ct);
+        if (file is null) return NotFound();
+
+        // Donnée personnelle : pas de cache partagé (proxy, CDN), et le navigateur respecte le type annoncé.
+        Response.Headers.CacheControl = "private, max-age=3600";
+        Response.Headers.XContentTypeOptions = "nosniff";
+        return File(file.Content, file.ContentType);
     }
 
     [HttpPost]
@@ -47,6 +73,7 @@ public class DeliveriesController(ISender sender) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/confirm")]
+    [Authorize(Roles = "Admin,DeliveryAgent")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(12 * 1024 * 1024)]
     public async Task<IActionResult> Confirm(Guid id, [FromForm] ConfirmDeliveryForm form, CancellationToken ct)

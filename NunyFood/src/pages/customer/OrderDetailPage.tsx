@@ -6,6 +6,7 @@ import { createPayment } from '../../api/payments'
 import { apiErrorMessage } from '../../api/errors'
 import { OrderStatusBadge } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
+import DeliveryProofModal from '../../components/delivery/DeliveryProofModal'
 import type { PaymentMethod } from '../../types'
 
 const paymentMethods: PaymentMethod[] = ['PayPal', 'TMoney', 'Flooz']
@@ -15,6 +16,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [method, setMethod] = useState<PaymentMethod>('PayPal')
+  const [showProof, setShowProof] = useState(false)
 
   const { data: order } = useQuery({
     queryKey: ['orders', id],
@@ -46,6 +48,7 @@ export default function OrderDetailPage() {
 
   const canPay = order.status === 'Created' || order.status === 'PendingPayment'
   const canConfirmReception = order.status === 'Delivered'
+  const hasProof = order.status === 'Delivered' || order.status === 'Confirmed'
 
   const onCancel = () => {
     if (window.confirm('Annuler cette commande ? Cette action est définitive.')) cancelMutation.mutate()
@@ -71,7 +74,13 @@ export default function OrderDetailPage() {
             <p className="font-medium text-gray-700">{new Date(order.createdAt).toLocaleDateString('fr-FR')}</p>
           </div>
         </div>
+        {hasProof && (
+          <button onClick={() => setShowProof(true)} className="mt-4 text-sm font-medium text-[#16A34A] hover:underline">
+            Voir la preuve de livraison (photo et signature)
+          </button>
+        )}
       </div>
+      {showProof && <DeliveryProofModal orderId={order.id} onClose={() => setShowProof(false)} />}
 
       {/* Payment */}
       {canPay && (

@@ -46,10 +46,15 @@ public sealed class FakeFileStorage : IFileStorage
 
     public Task<string> SaveAsync(FileUpload file, string folder, CancellationToken ct = default)
     {
-        var url = $"/uploads/{folder}/{Saved.Count}.png";
-        Saved.Add(url);
-        return Task.FromResult(url);
+        var path = $"{folder}/{Saved.Count}.png";
+        Saved.Add(path);
+        return Task.FromResult(path);
     }
+
+    public Task<StoredFile?> OpenReadAsync(string path, CancellationToken ct = default) =>
+        Task.FromResult(Saved.Contains(path)
+            ? new StoredFile(new MemoryStream("image"u8.ToArray()), "image/png")
+            : null);
 }
 
 /// <summary>

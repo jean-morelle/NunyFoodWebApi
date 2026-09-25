@@ -4,6 +4,10 @@ import type { Delivery, DeliveryAgent } from '../types'
 export const getDeliveryByOrder = (orderId: string) =>
   client.get<Delivery>(`/deliveries?orderId=${orderId}`).then((r) => r.data)
 
+/** Photo ou signature de preuve : route authentifiée, d'où le passage par le client API (et non un simple <img src>). */
+export const getDeliveryProof = (deliveryId: string, kind: 'photo' | 'signature') =>
+  client.get<Blob>(`/deliveries/${deliveryId}/${kind}`, { responseType: 'blob' }).then((r) => r.data)
+
 export const getDeliveriesByAgent = (agentId: string) =>
   client.get<Delivery[]>(`/deliveries?agentId=${agentId}`).then((r) => r.data)
 

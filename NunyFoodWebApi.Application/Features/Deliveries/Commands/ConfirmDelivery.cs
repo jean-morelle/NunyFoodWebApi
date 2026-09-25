@@ -63,8 +63,8 @@ public class ConfirmDeliveryCommandHandler(
             throw new InvalidOperationException("Cette livraison a déjà été confirmée.");
 
         var folder = $"deliveries/{d.Id:N}";
-        d.PhotoUrl = await fileStorage.SaveAsync(request.Photo!, folder, ct);
-        d.SignatureUrl = await fileStorage.SaveAsync(request.Signature!, folder, ct);
+        d.PhotoPath = await fileStorage.SaveAsync(request.Photo!, folder, ct);
+        d.SignaturePath = await fileStorage.SaveAsync(request.Signature!, folder, ct);
         d.ReceiverName = request.ReceiverName;
         d.Latitude = request.Latitude;
         d.Longitude = request.Longitude;

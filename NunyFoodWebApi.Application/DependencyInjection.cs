@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NunyFoodWebApi.Application.Common.Behaviors;
 using NunyFoodWebApi.Application.Common.Messaging;
 using NunyFoodWebApi.Application.Features.Auth;
+using NunyFoodWebApi.Application.Features.Deliveries;
 using NunyFoodWebApi.Application.Mapping;
 
 namespace NunyFoodWebApi.Application;
@@ -23,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<AccountLookup>();
         services.AddScoped<OtpManager>();
+        services.AddScoped<DeliveryAccess>();
 
         return services;
     }

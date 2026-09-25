@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getDeliveryByOrder } from '../../api/deliveries'
 import Modal from '../ui/Modal'
+import ProofImage from './ProofImage'
 
 interface Props {
   orderId: string
@@ -46,9 +47,8 @@ export default function DeliveryProofModal({ orderId, onClose }: Props) {
           <div className="space-y-1">
             <p className="text-gray-500">Photo</p>
             {delivery.photoUrl ? (
-              <a href={delivery.photoUrl} target="_blank" rel="noreferrer">
-                <img src={delivery.photoUrl} alt="Photo de preuve" className="max-h-64 w-full rounded-lg object-contain bg-gray-50" />
-              </a>
+              <ProofImage deliveryId={delivery.id} kind="photo" alt="Photo de preuve" openable
+                className="max-h-64 w-full rounded-lg object-contain bg-gray-50" />
             ) : (
               <p className="text-gray-400">Aucune photo</p>
             )}
@@ -57,7 +57,8 @@ export default function DeliveryProofModal({ orderId, onClose }: Props) {
           <div className="space-y-1">
             <p className="text-gray-500">Signature</p>
             {delivery.signatureUrl ? (
-              <img src={delivery.signatureUrl} alt="Signature du receveur" className="h-32 w-full rounded-lg border border-gray-200 object-contain bg-white" />
+              <ProofImage deliveryId={delivery.id} kind="signature" alt="Signature du receveur"
+                className="h-32 w-full rounded-lg border border-gray-200 object-contain bg-white" />
             ) : (
               <p className="text-gray-400">Aucune signature</p>
             )}

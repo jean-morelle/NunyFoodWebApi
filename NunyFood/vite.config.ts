@@ -13,12 +13,6 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // Fichiers envoyés (photos et signatures de livraison) servis par l'API
-      '/uploads': {
-        target: 'https://localhost:7000',
-        changeOrigin: true,
-        secure: false,
-      },
     },
   },
   test: {

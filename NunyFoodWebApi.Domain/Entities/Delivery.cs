@@ -7,8 +7,9 @@ public class Delivery : BaseEntity
     public Guid OrderId { get; set; }
     public Guid DeliveryAgentId { get; set; }
     public string ReceiverName { get; set; } = string.Empty;
-    public string? PhotoUrl { get; set; }
-    public string? SignatureUrl { get; set; }
+    /// <summary>Chemin privé dans le stockage (IFileStorage), jamais exposé tel quel : servi par l'API après contrôle d'accès.</summary>
+    public string? PhotoPath { get; set; }
+    public string? SignaturePath { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public DateTime? DeliveredAt { get; set; }

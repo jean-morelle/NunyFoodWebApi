@@ -16,10 +16,10 @@ public class DeliveryConfiguration : IEntityTypeConfiguration<Delivery>
             .IsRequired()
             .HasMaxLength(200);
 
-        builder.Property(d => d.PhotoUrl)
+        builder.Property(d => d.PhotoPath)
             .HasMaxLength(500);
 
-        builder.Property(d => d.SignatureUrl)
+        builder.Property(d => d.SignaturePath)
             .HasMaxLength(500);
 
         builder.HasIndex(d => d.OrderId)
