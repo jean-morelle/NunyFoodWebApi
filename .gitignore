@@ -10,3 +10,17 @@ obj/
 
 ## User Secrets : stockés hors du projet (jamais commités)
 ## Chemin : %APPDATA%\Microsoft\UserSecrets\6befb58f-968a-4258-9260-e2163e316fc5\secrets.json
+
+# Secrets locaux
+appsettings.Development.json
+
+# Fichiers envoyés (preuves de livraison)
+NunyFoodWebApi/uploads/
+
+# Frontend : dépendances, build et caches (régénérés par npm install / npm run build)
+node_modules/
+NunyFood/dist/
+*.tsbuildinfo
+
+# Logs Serilog
+logs/
