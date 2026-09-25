@@ -2,25 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { getOrders, updateOrderStatus } from '../../api/orders'
 import { apiErrorMessage } from '../../api/errors'
+import { manualStatusOptions, orderStatusLabels } from '../../lib/orderStatus'
 import { OrderStatusBadge } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import type { Order, OrderStatus } from '../../types'
 
-// Statuts que l'admin peut fixer à la main selon le statut actuel (miroir des règles de l'API :
-// UpdateOrderStatusCommandValidator.ManualStatuses + OrderStatusTransitions). Les autres statuts
-// suivent le paiement, l'affectation d'un livreur et la livraison.
-const cancellable: OrderStatus[] = ['Created', 'PendingPayment', 'Paid', 'Preparing', 'Assigned']
-const manualOptions = (status: OrderStatus): OrderStatus[] => [
-  ...(status === 'Paid' ? (['Preparing'] as OrderStatus[]) : []),
-  ...(cancellable.includes(status) ? (['Cancelled'] as OrderStatus[]) : []),
-]
-
-const statusLabels: Record<OrderStatus, string> = {
-  Created: 'Créée', PendingPayment: 'En attente de paiement', Paid: 'Payée',
-  Preparing: 'En préparation', Assigned: 'Assignée', InDelivery: 'En livraison',
-  Delivered: 'Livrée', Confirmed: 'Confirmée', Cancelled: 'Annulée',
-}
 
 export default function AdminOrdersPage() {
   const queryClient = useQueryClient()
@@ -37,7 +24,7 @@ export default function AdminOrdersPage() {
   const openModal = (order: Order) => {
     updateMut.reset()
     setSelected(order)
-    setNewStatus(manualOptions(order.status)[0])
+    setNewStatus(manualStatusOptions(order.status)[0])
   }
 
   return (
@@ -64,7 +51,7 @@ export default function AdminOrdersPage() {
                 <td className="px-6 py-4"><OrderStatusBadge status={o.status} /></td>
                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
                 <td className="px-6 py-4">
-                  {manualOptions(o.status).length > 0 && (
+                  {manualStatusOptions(o.status).length > 0 && (
                     <button onClick={() => openModal(o)} className="text-sm text-[#16A34A] hover:underline">
                       Changer statut
                     </button>
@@ -86,7 +73,7 @@ export default function AdminOrdersPage() {
               onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
               className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
             >
-              {selected && manualOptions(selected.status).map((s) => <option key={s} value={s}>{statusLabels[s]}</option>)}
+              {selected && manualStatusOptions(selected.status).map((s) => <option key={s} value={s}>{orderStatusLabels[s]}</option>)}
             </select>
             <p className="text-xs text-gray-500 mt-2">
               Les autres statuts suivent automatiquement le paiement, l'affectation d'un livreur et la livraison.
