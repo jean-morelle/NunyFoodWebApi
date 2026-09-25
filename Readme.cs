@@ -453,4 +453,4 @@ Développer une plateforme web complète permettant :
 5. La simulation puis l'intégration future des paiements.
 6. La gestion des livraisons.
 7. Un tableau de bord administrateur complet.
-8. Une architecture évolutive et maintenable basée sur .NET 10 et React TypeScript.
+8. Usne architecture évolutive et maintenable basée sur .NET 10 et React TypeScript.

@@ -1,59 +1,47 @@
-using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NunyFoodWebApi.Application.DTOs.Orders;
-using NunyFoodWebApi.Application.Interfaces;
-using NunyFoodWebApi.Domain.Enums;
+using NunyFoodWebApi.Application.Common.Messaging;
+using NunyFoodWebApi.Application.Features.Orders.Commands;
+using NunyFoodWebApi.Application.Features.Orders.Queries;
 
 namespace NunyFoodWebApi.Controllers;
 
 [Authorize(Roles = "Admin,Customer")]
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController(
-    IOrderService service,
-    IValidator<CreateOrderDto> createValidator) : ControllerBase
+public class OrdersController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] Guid? customerId, CancellationToken ct)
-    {
-        if (customerId.HasValue)
-            return Ok(await service.GetByCustomerIdAsync(customerId.Value, ct));
-        return Ok(await service.GetAllAsync(ct));
-    }
+    public async Task<IActionResult> GetAll([FromQuery] Guid? customerId, CancellationToken ct) =>
+        Ok(await sender.Send(new GetOrdersQuery(customerId), ct));
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var dto = await service.GetByIdAsync(id, ct);
+        var dto = await sender.Send(new GetOrderByIdQuery(id), ct);
         return dto is null ? NotFound() : Ok(dto);
     }
 
     [HttpPost]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> Create([FromBody] CreateOrderDto dto, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateOrderCommand command, CancellationToken ct)
     {
-        var result = await createValidator.ValidateAsync(dto, ct);
-        if (!result.IsValid)
-        {
-            foreach (var e in result.Errors) ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
-            return ValidationProblem();
-        }
-        var created = await service.CreateAsync(dto, ct);
+        var created = await sender.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusCommand command, CancellationToken ct)
     {
-        var updated = await service.UpdateStatusAsync(id, request.Status, ct);
+        var updated = await sender.Send(command with { Id = id }, ct);
         return updated is null ? NotFound() : Ok(updated);
     }
 
     [HttpGet("{id:guid}/status-history")]
-    public async Task<IActionResult> GetStatusHistory(Guid id, CancellationToken ct) =>
-        Ok(await service.GetStatusHistoryAsync(id, ct));
+    public async Task<IActionResult> GetStatusHistory(Guid id, CancellationToken ct)
+    {
+        var history = await sender.Send(new GetOrderStatusHistoryQuery(id), ct);
+        return history is null ? NotFound() : Ok(history);
+    }
 }
-
-public record UpdateOrderStatusRequest(OrderStatus Status);

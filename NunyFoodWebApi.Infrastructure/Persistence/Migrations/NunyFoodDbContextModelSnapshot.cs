@@ -290,6 +290,46 @@ namespace NunyFoodWebApi.Infrastructure.Persistence.Migrations
                     b.ToTable("OrderStatusHistories", (string)null);
                 });
 
+            modelBuilder.Entity("NunyFoodWebApi.Domain.Entities.OtpCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email", "Role", "Purpose");
+
+                    b.ToTable("OtpCodes", (string)null);
+                });
+
             modelBuilder.Entity("NunyFoodWebApi.Domain.Entities.Pack", b =>
                 {
                     b.Property<Guid>("Id")

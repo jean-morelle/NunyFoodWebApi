@@ -5,9 +5,10 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { createCustomer } from '../../api/customers'
-import { loginCustomer } from '../../api/auth'
+import { loginCustomer, verifyCustomerOtp } from '../../api/auth'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
+import OtpVerification from '../../components/auth/OtpVerification'
 
 const schema = z
   .object({
@@ -29,6 +30,7 @@ export default function RegisterPage() {
   const { setToken } = useAuthStore()
   const navigate = useNavigate()
   const [error, setError] = useState('')
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
 
   const {
     register,
@@ -43,15 +45,31 @@ export default function RegisterPage() {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: data.phoneNumber.trim(),
         password: data.password,
       })
-      const token = await loginCustomer(data.email, data.password)
-      setToken(token.token)
-      navigate('/customer/dashboard')
     } catch {
       setError("Une erreur est survenue. Cet email est peut-être déjà utilisé.")
+      return
     }
+    try {
+      await loginCustomer(data.email, data.password)
+      setCredentials({ email: data.email, password: data.password })
+    } catch {
+      setError("Compte créé, mais l'envoi du code a échoué. Connectez-vous pour recevoir un nouveau code.")
+    }
+  }
+
+  const onVerify = async (code: string) => {
+    if (!credentials) return
+    const token = await verifyCustomerOtp(credentials.email, code)
+    setToken(token.token)
+    navigate('/customer/dashboard')
+  }
+
+  const onResend = async () => {
+    if (!credentials) return
+    await loginCustomer(credentials.email, credentials.password)
   }
 
   return (
@@ -63,64 +81,68 @@ export default function RegisterPage() {
             <p className="text-gray-500 text-sm mt-1">Rejoignez NunyFood et prenez soin de votre famille</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Prénom"
-                placeholder="Jean"
-                error={errors.firstName?.message}
-                {...register('firstName')}
-              />
-              <Input
-                label="Nom"
-                placeholder="Morelle"
-                error={errors.lastName?.message}
-                {...register('lastName')}
-              />
-            </div>
-
-            <Input
-              label="Adresse email"
-              type="email"
-              placeholder="vous@exemple.com"
-              error={errors.email?.message}
-              {...register('email')}
-            />
-
-            <Input
-              label="Téléphone"
-              type="tel"
-              placeholder="+33 6 00 00 00 00"
-              error={errors.phoneNumber?.message}
-              {...register('phoneNumber')}
-            />
-
-            <Input
-              label="Mot de passe"
-              type="password"
-              placeholder="Au moins 8 caractères"
-              error={errors.password?.message}
-              {...register('password')}
-            />
-
-            <Input
-              label="Confirmer le mot de passe"
-              type="password"
-              placeholder="••••••••"
-              error={errors.confirmPassword?.message}
-              {...register('confirmPassword')}
-            />
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                {error}
+          {credentials ? (
+            <OtpVerification email={credentials.email} onVerify={onVerify} onResend={onResend} />
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Prénom"
+                  placeholder="Jean"
+                  error={errors.firstName?.message}
+                  {...register('firstName')}
+                />
+                <Input
+                  label="Nom"
+                  placeholder="Morelle"
+                  error={errors.lastName?.message}
+                  {...register('lastName')}
+                />
               </div>
-            )}
-
-            <Button type="submit" loading={isSubmitting} className="w-full" size="lg">
-              Créer mon compte
-            </Button>
-          </form>
+  
+              <Input
+                label="Adresse email"
+                type="email"
+                placeholder="vous@exemple.com"
+                error={errors.email?.message}
+                {...register('email')}
+              />
+  
+              <Input
+                label="Téléphone"
+                type="tel"
+                placeholder="+33 6 00 00 00 00"
+                error={errors.phoneNumber?.message}
+                {...register('phoneNumber')}
+              />
+  
+              <Input
+                label="Mot de passe"
+                type="password"
+                placeholder="Au moins 8 caractères"
+                error={errors.password?.message}
+                {...register('password')}
+              />
+  
+              <Input
+                label="Confirmer le mot de passe"
+                type="password"
+                placeholder="••••••••"
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword')}
+              />
+  
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  {error}
+                </div>
+              )}
+  
+              <Button type="submit" loading={isSubmitting} className="w-full" size="lg">
+                Créer mon compte
+              </Button>
+            </form>
+          )}
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Déjà un compte ?{' '}

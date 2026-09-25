@@ -17,12 +17,21 @@ export const confirmDelivery = (
   id: string,
   data: {
     receiverName: string
-    photoUrl?: string
-    signatureUrl?: string
+    photo: File
+    signature: Blob
     latitude?: number
     longitude?: number
   },
-) => client.patch<Delivery>(`/deliveries/${id}/confirm`, data).then((r) => r.data)
+) => {
+  const form = new FormData()
+  form.append('receiverName', data.receiverName)
+  form.append('photo', data.photo)
+  form.append('signature', data.signature, 'signature.png')
+  // Point décimal quelle que soit la langue du navigateur ; l'API lit en culture invariante.
+  if (data.latitude !== undefined) form.append('latitude', data.latitude.toString())
+  if (data.longitude !== undefined) form.append('longitude', data.longitude.toString())
+  return client.patch<Delivery>(`/deliveries/${id}/confirm`, form).then((r) => r.data)
+}
 
 export const getDeliveryAgents = () =>
   client.get<DeliveryAgent[]>('/deliveryagents').then((r) => r.data)

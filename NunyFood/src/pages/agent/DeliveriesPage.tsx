@@ -1,9 +1,14 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { getDeliveriesByAgent } from '../../api/deliveries'
+import type { Delivery } from '../../types'
+import Button from '../../components/ui/Button'
+import ConfirmDeliveryModal from '../../components/delivery/ConfirmDeliveryModal'
 
 export default function AgentDeliveriesPage() {
   const { user } = useAuthStore()
+  const [confirming, setConfirming] = useState<Delivery | null>(null)
   const { data: deliveries = [], isLoading } = useQuery({
     queryKey: ['agent-deliveries', user?.id],
     queryFn: () => getDeliveriesByAgent(user!.id),
@@ -21,11 +26,11 @@ export default function AgentDeliveriesPage() {
         <p className="text-gray-500 mt-1">{deliveries.length} livraison(s) assignée(s)</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Commande', 'Destinataire', 'Livré le', 'Statut'].map((h) => (
+              {['Commande', 'Destinataire', 'Livré le', 'Statut', ''].map((h) => (
                 <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -45,6 +50,11 @@ export default function AgentDeliveriesPage() {
                     {d.deliveredAt ? 'Livré' : 'En cours'}
                   </span>
                 </td>
+                <td className="px-6 py-4 text-right">
+                  {!d.deliveredAt && (
+                    <Button size="sm" onClick={() => setConfirming(d)}>Confirmer</Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -53,6 +63,8 @@ export default function AgentDeliveriesPage() {
           <div className="py-10 text-center text-gray-400 text-sm">Aucune livraison assignée</div>
         )}
       </div>
+
+      {confirming && <ConfirmDeliveryModal delivery={confirming} onClose={() => setConfirming(null)} />}
     </div>
   )
 }

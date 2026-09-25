@@ -19,6 +19,7 @@ public class NunyFoodDbContext(DbContextOptions<NunyFoodDbContext> options)
     public DbSet<OrderStatusHistory> OrderStatusHistories => Set<OrderStatusHistory>();
     public DbSet<DeliveryAgent> DeliveryAgents => Set<DeliveryAgent>();
     public DbSet<Delivery> Deliveries => Set<Delivery>();
+    public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

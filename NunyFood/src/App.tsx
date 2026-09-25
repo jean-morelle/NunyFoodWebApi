@@ -8,6 +8,7 @@ import ProtectedRoute from './routes/ProtectedRoute'
 import HomePage from './pages/public/HomePage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
+import ForgotPasswordPage from './pages/public/ForgotPasswordPage'
 
 import CustomerDashboardPage from './pages/customer/DashboardPage'
 import CustomerPacksPage from './pages/customer/PacksPage'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         {/* Customer */}

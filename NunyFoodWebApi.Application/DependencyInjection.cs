@@ -1,8 +1,10 @@
+using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using NunyFoodWebApi.Application.Interfaces;
+using NunyFoodWebApi.Application.Common.Behaviors;
+using NunyFoodWebApi.Application.Common.Messaging;
+using NunyFoodWebApi.Application.Features.Auth;
 using NunyFoodWebApi.Application.Mapping;
-using NunyFoodWebApi.Application.Services;
 
 namespace NunyFoodWebApi.Application;
 
@@ -10,21 +12,32 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddAutoMapper(typeof(MappingProfile).Assembly);
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        var assembly = typeof(DependencyInjection).Assembly;
 
-        services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<IBeneficiaryService, BeneficiaryService>();
-        services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<IPackService, PackService>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<IPaymentService, PaymentService>();
-        services.AddScoped<IDeliveryAgentService, DeliveryAgentService>();
-        services.AddScoped<IDeliveryService, DeliveryService>();
-        services.AddScoped<IPackProductService, PackProductService>();
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IAdminService, AdminService>();
+        services.AddAutoMapper(typeof(MappingProfile).Assembly);
+        services.AddValidatorsFromAssembly(assembly);
+
+        services.AddScoped<ISender, Sender>();
+        services.AddRequestHandlers(assembly);
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        services.AddScoped<AccountLookup>();
+        services.AddScoped<OtpManager>();
 
         return services;
+    }
+
+    /// <summary>Enregistre toutes les classes qui implémentent IRequestHandler&lt;,&gt; dans l'assembly.</summary>
+    private static void AddRequestHandlers(this IServiceCollection services, Assembly assembly)
+    {
+        var registrations =
+            from type in assembly.GetTypes()
+            where type is { IsClass: true, IsAbstract: false }
+            from @interface in type.GetInterfaces()
+            where @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)
+            select (@interface, type);
+
+        foreach (var (@interface, type) in registrations)
+            services.AddScoped(@interface, type);
     }
 }

@@ -106,6 +106,11 @@ export interface Delivery {
   createdAt: string
 }
 
+export interface OtpChallengeDto {
+  email: string
+  expiresIn: number
+}
+
 export interface TokenDto {
   token: string
   tokenType: string

@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NunyFoodWebApi.Application.Interfaces;
+using NunyFoodWebApi.Infrastructure.Email;
 using NunyFoodWebApi.Infrastructure.Payments;
 using NunyFoodWebApi.Infrastructure.Persistence;
 using NunyFoodWebApi.Infrastructure.Security;
+using NunyFoodWebApi.Infrastructure.Storage;
 
 namespace NunyFoodWebApi.Infrastructure;
 
@@ -31,6 +33,12 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         services.AddScoped<IPaymentProvider, FakePaymentProvider>();
+
+        services.Configure<GmailSettings>(configuration.GetSection("Gmail"));
+        services.AddScoped<IEmailService, GmailEmailService>();
+
+        services.Configure<StorageSettings>(configuration.GetSection("Storage"));
+        services.AddScoped<IFileStorage, LocalFileStorage>();
 
         services.AddHostedService<DatabaseSeeder>();
 

@@ -22,11 +22,11 @@ public class DatabaseSeeder(IServiceProvider serviceProvider, ILogger<DatabaseSe
             db.Admins.Add(new Admin
             {
                 FullName = "Super Admin",
-                Email = "admin@nunyfood.com",
+                Email = "koudorojeanmorelle408@gmail.com",
                 PasswordHash = hasher.Hash("Admin@1234"),
             });
             await db.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Seeded default admin: admin@nunyfood.com / Admin@1234");
+            logger.LogInformation("Seeded default admin: koudorojeanmorelle408@gmail.com / Admin@1234");
         }
 
         if (!await db.DeliveryAgents.AnyAsync(cancellationToken))

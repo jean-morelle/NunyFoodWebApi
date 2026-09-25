@@ -11,7 +11,10 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    // Sur /auth/* un 401 veut dire « identifiants ou code incorrects » : on laisse la page afficher l'erreur
+    // au lieu de recharger /login (ce qui ferait perdre la saisie en cours).
+    const isAuthRequest = err.config?.url?.startsWith('/auth/')
+    if (err.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }

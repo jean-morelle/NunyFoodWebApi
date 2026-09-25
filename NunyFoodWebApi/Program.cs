@@ -1,11 +1,17 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NunyFoodWebApi.Application;
+using NunyFoodWebApi.Application.Interfaces;
 using NunyFoodWebApi.Infrastructure;
 using NunyFoodWebApi.Infrastructure.Security;
+using NunyFoodWebApi.Infrastructure.Storage;
 using NunyFoodWebApi.Middleware;
+using NunyFoodWebApi.RateLimiting;
+using NunyFoodWebApi.Services;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -24,12 +30,25 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
     var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
         ?? throw new InvalidOperationException("JWT settings not configured.");
+
+    // Le secret ne doit jamais être dans appsettings.json (versionné) : user-secrets en dev,
+    // variable d'environnement Jwt__Secret en production.
+    if (Encoding.UTF8.GetByteCount(jwtSettings.Secret) < 32)
+        throw new InvalidOperationException(
+            "Jwt:Secret manquant ou trop court (32 octets minimum). En développement : " +
+            "dotnet user-secrets set \"Jwt:Secret\" \"<valeur aléatoire>\" --project NunyFoodWebApi");
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            // Garder les noms de claims du JWT tels quels ("sub", "role") au lieu de les
+            // convertir en URI ClaimTypes.*, sinon RoleClaimType = "role" ne trouve aucun rôle.
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -53,10 +72,14 @@ try
                   .AllowAnyMethod());
     });
 
+    builder.Services.AddNunyFoodRateLimiting(builder.Configuration);
+
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
-    builder.Services.AddControllers();
+    // Enums en texte ("Paid", "PayPal") : c'est ce qu'attend le frontend. Les nombres restent acceptés en entrée.
+    builder.Services.AddControllers()
+        .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
@@ -99,8 +122,21 @@ try
     app.UseExceptionHandler();
     app.UseHttpsRedirection();
     app.UseCors("NunyFoodFrontend");
+
+    // Fichiers envoyés (preuves de livraison). nosniff : le navigateur respecte le type image annoncé.
+    var storage = app.Configuration.GetSection("Storage").Get<StorageSettings>() ?? new StorageSettings();
+    var uploadsRoot = storage.GetRootPath(app.Environment);
+    Directory.CreateDirectory(uploadsRoot);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uploadsRoot),
+        RequestPath = storage.PublicBasePath,
+        OnPrepareResponse = ctx => ctx.Context.Response.Headers.XContentTypeOptions = "nosniff"
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
     app.MapControllers();
     app.Run();
 }

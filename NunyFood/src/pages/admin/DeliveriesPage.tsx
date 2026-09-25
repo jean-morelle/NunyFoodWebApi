@@ -9,6 +9,7 @@ import { OrderStatusBadge } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
+import DeliveryProofModal from '../../components/delivery/DeliveryProofModal'
 
 const schema = z.object({
   orderId: z.string().min(1, 'Commande requise'),
@@ -20,6 +21,7 @@ type FormData = z.infer<typeof schema>
 export default function AdminDeliveriesPage() {
   const queryClient = useQueryClient()
   const [modal, setModal] = useState(false)
+  const [proofOrderId, setProofOrderId] = useState<string | null>(null)
 
   const { data: orders = [] } = useQuery({ queryKey: ['admin-orders'], queryFn: () => getOrders() })
   const { data: agents = [] } = useQuery({ queryKey: ['admin-agents'], queryFn: getDeliveryAgents })
@@ -55,7 +57,7 @@ export default function AdminDeliveriesPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Référence', 'Montant', 'Statut', 'Date'].map((h) => (
+              {['Référence', 'Montant', 'Statut', 'Date', ''].map((h) => (
                 <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -67,6 +69,11 @@ export default function AdminDeliveriesPage() {
                 <td className="px-6 py-4 text-sm font-semibold text-gray-900">{o.amount.toLocaleString()} FCFA</td>
                 <td className="px-6 py-4"><OrderStatusBadge status={o.status} /></td>
                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
+                <td className="px-6 py-4 text-right">
+                  {o.status === 'Delivered' && (
+                    <Button size="sm" variant="ghost" onClick={() => setProofOrderId(o.id)}>Voir la preuve</Button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -102,6 +109,8 @@ export default function AdminDeliveriesPage() {
           </div>
         </form>
       </Modal>
+
+      {proofOrderId && <DeliveryProofModal orderId={proofOrderId} onClose={() => setProofOrderId(null)} />}
     </div>
   )
 }
