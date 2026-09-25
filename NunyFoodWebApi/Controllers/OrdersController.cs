@@ -38,6 +38,22 @@ public class OrdersController(ISender sender) : ControllerBase
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var cancelled = await sender.Send(new CancelOrderCommand(id), ct);
+        return cancelled is null ? NotFound() : Ok(cancelled);
+    }
+
+    [HttpPost("{id:guid}/confirm-reception")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> ConfirmReception(Guid id, CancellationToken ct)
+    {
+        var confirmed = await sender.Send(new ConfirmReceptionCommand(id), ct);
+        return confirmed is null ? NotFound() : Ok(confirmed);
+    }
+
     [HttpGet("{id:guid}/status-history")]
     public async Task<IActionResult> GetStatusHistory(Guid id, CancellationToken ct)
     {

@@ -1,5 +1,6 @@
 using AutoMapper;
 using FluentValidation;
+using FluentValidation.Results;
 using NunyFoodWebApi.Application.Common.Messaging;
 using NunyFoodWebApi.Application.DTOs.Deliveries;
 using NunyFoodWebApi.Application.Features.Orders;
@@ -26,6 +27,7 @@ public class CreateDeliveryCommandHandler(
     IRepository<Delivery> deliveryRepo,
     IRepository<Order> orderRepo,
     IRepository<OrderStatusHistory> historyRepo,
+    IRepository<DeliveryAgent> agentRepo,
     IMapper mapper) : IRequestHandler<CreateDeliveryCommand, DeliveryDto>
 {
     public async Task<DeliveryDto> Handle(CreateDeliveryCommand request, CancellationToken ct)
@@ -33,15 +35,20 @@ public class CreateDeliveryCommandHandler(
         var order = await orderRepo.GetByIdAsync(request.OrderId, ct)
             ?? throw new KeyNotFoundException($"Order {request.OrderId} not found.");
 
+        var agent = await agentRepo.GetByIdAsync(request.DeliveryAgentId, ct);
+        if (agent is null || !agent.IsActive)
+            throw new ValidationException([new ValidationFailure(nameof(request.DeliveryAgentId), "Livreur introuvable ou désactivé.")]);
+
+        // Vérifié avant tout ajout : refuse une commande non payée, annulée ou déjà en livraison.
+        order.ChangeStatus(OrderStatus.InDelivery, historyRepo);
+
         var delivery = new Delivery
         {
             OrderId = request.OrderId,
             DeliveryAgentId = request.DeliveryAgentId,
             ReceiverName = request.ReceiverName
         };
-
         deliveryRepo.Add(delivery);
-        order.ChangeStatus(OrderStatus.InDelivery, historyRepo);
         await deliveryRepo.SaveChangesAsync(ct);
         return mapper.Map<DeliveryDto>(delivery);
     }

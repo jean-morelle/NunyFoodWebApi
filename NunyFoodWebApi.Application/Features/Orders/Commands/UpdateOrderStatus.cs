@@ -15,9 +15,19 @@ public record UpdateOrderStatusCommand(
 
 public class UpdateOrderStatusCommandValidator : AbstractValidator<UpdateOrderStatusCommand>
 {
+    /// <summary>
+    /// Statuts que l'admin fixe à la main. Les autres découlent d'un événement réel (paiement,
+    /// affectation d'un livreur, livraison confirmée, réception confirmée par le client) :
+    /// les poser à la main permettrait par exemple de marquer « Payée » sans paiement.
+    /// </summary>
+    public static readonly OrderStatus[] ManualStatuses = [OrderStatus.Preparing, OrderStatus.Cancelled];
+
     public UpdateOrderStatusCommandValidator()
     {
-        RuleFor(x => x.Status).IsInEnum();
+        RuleFor(x => x.Status).IsInEnum()
+            .Must(s => ManualStatuses.Contains(s))
+            .WithMessage("Seuls les statuts « En préparation » et « Annulée » se changent manuellement ; " +
+                         "les autres suivent le paiement et la livraison.");
     }
 }
 

@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { getOrder, getOrderStatusHistory } from '../../api/orders'
+import { getOrder, getOrderStatusHistory, cancelOrder, confirmReception } from '../../api/orders'
 import { createPayment } from '../../api/payments'
+import { apiErrorMessage } from '../../api/errors'
 import { OrderStatusBadge } from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import type { PaymentMethod } from '../../types'
@@ -27,16 +28,28 @@ export default function OrderDetailPage() {
     enabled: !!id,
   })
 
+  // Après un paiement, une annulation ou une confirmation : statut et historique changent tous deux.
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+    queryClient.invalidateQueries({ queryKey: ['order-history', id] })
+  }
+
   const payMutation = useMutation({
     mutationFn: () => createPayment({ orderId: id!, amount: order!.amount, method }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-    },
+    onSuccess: refresh,
   })
+
+  const cancelMutation = useMutation({ mutationFn: () => cancelOrder(id!), onSuccess: refresh })
+  const receptionMutation = useMutation({ mutationFn: () => confirmReception(id!), onSuccess: refresh })
 
   if (!order) return <div className="flex justify-center h-64 items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16A34A]" /></div>
 
   const canPay = order.status === 'Created' || order.status === 'PendingPayment'
+  const canConfirmReception = order.status === 'Delivered'
+
+  const onCancel = () => {
+    if (window.confirm('Annuler cette commande ? Cette action est définitive.')) cancelMutation.mutate()
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -82,7 +95,31 @@ export default function OrderDetailPage() {
             <p className="text-sm text-center text-[#16A34A] font-medium">Paiement effectué !</p>
           )}
           {payMutation.isError && (
-            <p className="text-sm text-center text-red-600">Erreur lors du paiement.</p>
+            <p className="text-sm text-center text-red-600">{apiErrorMessage(payMutation.error, 'Erreur lors du paiement.')}</p>
+          )}
+          <div className="border-t border-gray-100 pt-4 text-center">
+            <button onClick={onCancel} disabled={cancelMutation.isPending} className="text-sm text-red-600 hover:underline disabled:opacity-50">
+              Annuler la commande
+            </button>
+            {cancelMutation.isError && (
+              <p className="text-sm text-red-600 mt-2">{apiErrorMessage(cancelMutation.error, "Impossible d'annuler la commande.")}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Reception */}
+      {canConfirmReception && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Votre pack a été livré</h3>
+            <p className="text-sm text-gray-500 mt-1">Confirmez que votre bénéficiaire l'a bien reçu pour clôturer la commande.</p>
+          </div>
+          <Button onClick={() => receptionMutation.mutate()} loading={receptionMutation.isPending} className="w-full" size="lg">
+            Confirmer la réception
+          </Button>
+          {receptionMutation.isError && (
+            <p className="text-sm text-center text-red-600">{apiErrorMessage(receptionMutation.error, 'La confirmation a échoué.')}</p>
           )}
         </div>
       )}

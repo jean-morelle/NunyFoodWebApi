@@ -18,5 +18,11 @@ export const createOrder = (data: {
 export const updateOrderStatus = (id: string, status: OrderStatus) =>
   client.patch<Order>(`/orders/${id}/status`, { status }).then((r) => r.data)
 
+export const cancelOrder = (id: string) =>
+  client.post<Order>(`/orders/${id}/cancel`).then((r) => r.data)
+
+export const confirmReception = (id: string) =>
+  client.post<Order>(`/orders/${id}/confirm-reception`).then((r) => r.data)
+
 export const getOrderStatusHistory = (id: string) =>
   client.get<OrderStatusHistory[]>(`/orders/${id}/status-history`).then((r) => r.data)
