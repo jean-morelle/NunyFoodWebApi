@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [master, securite-cqrs-livraisons]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Les tests n'ont besoin ni de PostgreSQL ni de secrets : ils tournent sur des fakes en mémoire.
+      - name: Tests
+        run: dotnet test NunyFoodWebApi.Tests --configuration Release
+
+      - name: Build de l'API
+        run: dotnet build NunyFoodWebApi/NunyFoodWebApi.csproj --configuration Release
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: NunyFood
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: NunyFood/package-lock.json
+
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Types
+        run: npx tsc --noEmit -p tsconfig.app.json && npx tsc --noEmit -p tsconfig.node.json
+      - name: Tests
+        run: npm test
